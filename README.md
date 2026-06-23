@@ -4,6 +4,12 @@ ESP32-C6-Touch-AMOLED-1.8 ESP32-C6 1.8inch AMOLED Touch Watch Development Board,
 
 ---
 
+## 📘 Hardware
+
+- [Schematic Rev1.1](Schematic/ESP32-C6-Touch-AMOLED-1.8-Schematic-Rev1.1.pdf)
+
+---
+
 ## 🔧 Configuration
 
 You can find detailed configuration information on the product wiki page
