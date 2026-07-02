@@ -486,8 +486,9 @@ esp_io_expander_handle_t bsp_io_expander_init(void)
     return io_expander;
 }
 
-static lv_display_t *bsp_display_lcd_init()
+static lv_display_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
 {
+    assert(cfg != NULL);
     bsp_display_config_t disp_config = {0};
     
     bsp_io_expander_init();

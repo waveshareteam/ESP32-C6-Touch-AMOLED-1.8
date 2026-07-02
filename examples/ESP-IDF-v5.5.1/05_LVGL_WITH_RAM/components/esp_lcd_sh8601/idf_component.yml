@@ -1,4 +1,6 @@
 dependencies:
+  lvgl/lvgl:
+    version: "8.4.0"
   cmake_utilities:
     version: 0.*
   idf:

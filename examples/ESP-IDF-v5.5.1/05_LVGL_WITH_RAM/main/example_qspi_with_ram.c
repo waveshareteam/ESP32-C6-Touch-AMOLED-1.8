@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "esp_lcd_panel_io.h"
@@ -243,21 +243,19 @@ void app_main(void)
     static lv_disp_drv_t disp_drv;      // contains callback functions
 
     ESP_LOGI(TAG, "Initialize I2C bus");
-    const i2c_config_t i2c_conf = {
-        .mode = I2C_MODE_MASTER,
+    i2c_master_bus_handle_t i2c_bus_handle = NULL;
+    const i2c_master_bus_config_t i2c_conf = {
+        .i2c_port = TOUCH_HOST,
         .sda_io_num = EXAMPLE_PIN_NUM_TOUCH_SDA,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_io_num = EXAMPLE_PIN_NUM_TOUCH_SCL,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 200 * 1000,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
     };
-    ESP_ERROR_CHECK(i2c_param_config(TOUCH_HOST, &i2c_conf));
-    ESP_ERROR_CHECK(i2c_driver_install(TOUCH_HOST, i2c_conf.mode, 0, 0, 0));
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_conf, &i2c_bus_handle));
 
     esp_io_expander_handle_t io_expander = NULL;
-    esp_io_expander_new_i2c_tca9554(TOUCH_HOST, ESP_IO_EXPANDER_I2C_TCA9554_ADDRESS_000, &io_expander);
-
-    ESP_ERROR_CHECK(esp_io_expander_new_i2c_tca9554(TOUCH_HOST, ESP_IO_EXPANDER_I2C_TCA9554_ADDRESS_000, &io_expander));
+    ESP_ERROR_CHECK(esp_io_expander_new_i2c_tca9554(i2c_bus_handle, ESP_IO_EXPANDER_I2C_TCA9554_ADDRESS_000, &io_expander));
 
     esp_io_expander_set_dir(io_expander, IO_EXPANDER_PIN_NUM_4 | IO_EXPANDER_PIN_NUM_5 , IO_EXPANDER_OUTPUT);
     esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_4, 0);
@@ -317,7 +315,7 @@ void app_main(void)
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
     const esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
     // Attach the TOUCH to the I2C bus
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)TOUCH_HOST, &tp_io_config, &tp_io_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_bus_handle, &tp_io_config, &tp_io_handle));
 
     const esp_lcd_touch_config_t tp_cfg = {
         .x_max = EXAMPLE_LCD_H_RES,
