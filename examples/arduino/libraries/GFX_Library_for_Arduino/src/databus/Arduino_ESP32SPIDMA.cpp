@@ -2,6 +2,21 @@
 
 #if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C6 || CONFIG_IDF_TARGET_ESP32H2 || CONFIG_IDF_TARGET_ESP32P4 || CONFIG_IDF_TARGET_ESP32C5)
 
+static uint32_t gfxSpiFrequencyToClockDiv(spi_t *spi, uint32_t freq)
+{
+#if defined(ESP_ARDUINO_VERSION) && defined(ESP_ARDUINO_VERSION_VAL)
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 10)
+  return spiFrequencyToClockDiv(spi, freq);
+#else
+  (void)spi;
+  return spiFrequencyToClockDiv(freq);
+#endif
+#else
+  (void)spi;
+  return spiFrequencyToClockDiv(freq);
+#endif
+}
+
 /**
  * @brief Arduino_ESP32SPIDMA
  *
@@ -60,7 +75,7 @@ bool Arduino_ESP32SPIDMA::begin(int32_t speed, int8_t dataMode)
 
   if (!_div)
   {
-    _div = spiFrequencyToClockDiv(_speed);
+    _div = gfxSpiFrequencyToClockDiv(nullptr, _speed);
   }
 
   // set pin mode
