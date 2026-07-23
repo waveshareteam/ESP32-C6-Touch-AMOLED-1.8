@@ -1,0 +1,7 @@
+version: "1.0.0"
+dependencies:
+  idf: ">=5.5"
+  waveshare/esp32_c6_touch_amoled_1_8:
+    git: https://github.com/waveshareteam/Waveshare-ESP32-components.git
+    path: bsp/esp32_c6_touch_amoled_1_8
+    version: "d75c3e72be9e2248f525bcdbf9ca31f1fe8d357b"

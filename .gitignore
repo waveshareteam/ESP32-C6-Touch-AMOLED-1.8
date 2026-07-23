@@ -1,0 +1,13 @@
+build/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+__pycache__/
+*.pyc
+.pytest_cache/
+release-artifacts/
+releases/dist/
+releases/downloads/
+**/build/
+**/managed_components/
