@@ -1,12 +1,35 @@
-# ESP32-C6-Touch-AMOLED-1.8
+<div align="center">
+  <h1>ESP32-C6-Touch-AMOLED-1.8</h1>
+  <p><strong>ESP32-C6 1.8-inch 368 x 448 QSPI AMOLED touch development board</strong></p>
+  <p>
+    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml"><img alt="Build Examples" src="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml/badge.svg"></a>
+    <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/waveshareteam/ESP32-C6-Touch-AMOLED-1.8"></a>
+  </p>
+  <p>
+    <a href="https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8">Product Wiki</a> ·
+    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/releases">GitHub Releases</a> ·
+    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml">CI Firmware Artifacts</a> ·
+    <a href="examples/esp-idf/">ESP-IDF Examples</a> ·
+    <a href="examples/arduino/">Arduino V1</a> ·
+    <a href="examples/arduino-v2/">Arduino V2</a> ·
+    <a href="docs/">Documentation</a> ·
+    <a href="README_CN.md">简体中文</a>
+  </p>
+</div>
 
-[简体中文](README_CN.md)
+---
 
-ESP32-C6 development board with a 1.8-inch 368 x 448 QSPI AMOLED display,
+## Overview
+
+This repository provides first-party ESP-IDF projects, separate Arduino V1
+and V2 example sets, source-built firmware packages, factory recovery images,
+and development documentation for the Waveshare ESP32-C6-Touch-AMOLED-1.8.
+
+The board combines an ESP32-C6 with a 1.8-inch QSPI AMOLED display,
 capacitive touch, 16 MB Flash, power management, RTC, IMU, audio, and microSD.
 The board has no PSRAM.
 
-## Hardware revisions
+## Hardware Revisions
 
 | Revision | Display | Touch | Arduino examples |
 | --- | --- | --- | --- |
@@ -19,7 +42,13 @@ ESP-IDF examples use the managed waveshare/esp32_c6_touch_amoled_1_8 BSP,
 which detects the touch controller and selects the matching display and touch
 drivers automatically.
 
-## Hardware overview
+> [!IMPORTANT]
+> The physical touch controller on V2 boards is CST820. The software names
+> <code>Arduino_CST816x</code> and <code>esp_lcd_touch_cst816s</code> are
+> retained because those drivers are compatible with CST820; they are not the
+> onboard controller model.
+
+## Hardware Overview
 
 | Feature | Device / interface |
 | --- | --- |
@@ -53,19 +82,23 @@ Arduino provides 14 V1 sketches and 9 V2 sketches. Bundled libraries remain
 next to each set and their upstream library examples are excluded from product
 CI. See [examples/README.md](examples/README.md) for the complete index.
 
-## Supported toolchains
+## Supported Toolchains
 
-| Surface | Version | Target / board options |
-| --- | --- | --- |
-| ESP-IDF | v5.5.5 | esp32c6 |
-| ESP-IDF | v6.0.2 | esp32c6 |
-| Arduino-ESP32 | 3.3.11 | esp32:esp32:esp32c6, 16 MB Flash, app3M_fat9M_16MB |
+| Surface | Version | Firmware builds |
+| --- | --- | ---: |
+| ESP-IDF | <code>v5.5.5</code> | 7 |
+| ESP-IDF | <code>v6.0.2</code> | 7 |
+| Arduino-ESP32 V1 | <code>3.3.11</code> | 14 |
+| Arduino-ESP32 V2 | <code>3.3.11</code> | 9 |
 
-GitHub Actions discovers and builds every first-party project, then uploads a
-flashable firmware package for each successful build. See
-[docs/CI.md](docs/CI.md).
+The [Build Examples workflow](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml)
+runs two discovery jobs and 37 firmware builds for a full <code>all</code> or
+tag matrix. ESP-IDF targets <code>esp32c6</code>; Arduino uses
+<code>esp32:esp32:esp32c6:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB</code>.
+Every successful build uploads a flashable firmware package. See
+[Continuous Integration](docs/CI.md) for discovery and artifact details.
 
-## BSP dependency
+## BSP Dependency
 
 Before the component registry release, ESP-IDF projects use this Git
 dependency pinned to the BSP commit:
@@ -80,19 +113,49 @@ waveshare/esp32_c6_touch_amoled_1_8:
 The BSP source manifest declares version 1.0.0. The full commit SHA keeps
 CI dependency resolution reproducible before the registry release. After the
 component is published, projects can move to a compatible registry constraint
-such as ^1.0.0.
+such as <code>^1.0.0</code>.
 
-## Firmware
+## Firmware Artifacts
 
-CI firmware packages contain a manifest, binaries, flash arguments, and flash
-helpers. Download them with:
+Each successful CI build is packaged as a flashable archive and uploaded to
+the [Build Examples workflow](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml).
+Download and extract all artifacts from a completed run with:
 
 ~~~bash
 python3 releases/download_artifacts.py --run-id RUN_ID --clean
 ~~~
 
-The checked-in image under [Firmware](Firmware/) is a factory/recovery asset,
-not a CI build output. See [docs/FIRMWARE.md](docs/FIRMWARE.md).
+Open the matching directory under <code>releases/downloads/run-RUN_ID/</code>,
+install esptool with <code>python -m pip install esptool</code>, and flash with:
+
+~~~bash
+./flash.sh /dev/ttyACM0
+~~~
+
+On Windows:
+
+~~~bat
+flash.bat COMx
+~~~
+
+Each package contains <code>manifest.json</code>, <code>flash_args.txt</code>,
+platform-specific flash helpers, and the required binaries under
+<code>bin/</code>. The checked-in image under [Firmware](Firmware/) is a
+separate factory/recovery asset, not a CI build output. See
+[Firmware Artifacts](docs/FIRMWARE.md).
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| [examples/esp-idf/](examples/esp-idf/) | First-party ESP-IDF projects |
+| [examples/arduino/](examples/arduino/) | V1 Arduino sketches and bundled libraries |
+| [examples/arduino-v2/](examples/arduino-v2/) | V2 Arduino sketches and bundled libraries |
+| [Firmware/](Firmware/) | Factory flashing and recovery image |
+| [releases/](releases/) | Firmware packaging and artifact download tools |
+| [Schematic/](Schematic/) | Board schematics |
+| [config/](config/) | Shared ESP-IDF configuration notes and overlays |
+| [docs/](docs/) | Setup, examples, CI, structure, and firmware documentation |
 
 ## Documentation
 
@@ -104,12 +167,22 @@ not a CI build output. See [docs/FIRMWARE.md](docs/FIRMWARE.md).
 - [Release tools](releases/README.md)
 - [Product Wiki](https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8)
 
-## Support and license
+## Support and Contributions
 
 Use [GitHub Issues](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/issues)
 for reproducible reports, and include the board revision, example path,
-framework version, and relevant logs. See [SUPPORT.md](SUPPORT.md),
-[CONTRIBUTING.md](CONTRIBUTING.md), and [SECURITY.md](SECURITY.md).
+framework version, reproduction steps, expected behavior, actual behavior,
+and relevant serial or build logs.
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Support](SUPPORT.md)
+- [Security Policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Third-party Notices](THIRD_PARTY.md)
+- [Open an Issue](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/issues/new/choose)
+
+## License
 
 Unless noted otherwise in a subdirectory, this repository is licensed under
 the Apache License 2.0. Third-party code keeps its own license and notices.
+See [LICENSE](LICENSE) and [Third-party Notices](THIRD_PARTY.md).
