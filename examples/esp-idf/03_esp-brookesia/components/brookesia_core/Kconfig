@@ -1,12 +1,4 @@
 menu "ESP Brookesia - Core Configurations"
-    menuconfig ESP_BROOKESIA_ENABLE_AI_FRAMEWORK
-        bool "AI Framework"
-        default y
-
-    if ESP_BROOKESIA_ENABLE_AI_FRAMEWORK
-        rsource "ai_framework/Kconfig"
-    endif
-
     menuconfig ESP_BROOKESIA_ENABLE_GUI
         bool "GUI"
         default y
