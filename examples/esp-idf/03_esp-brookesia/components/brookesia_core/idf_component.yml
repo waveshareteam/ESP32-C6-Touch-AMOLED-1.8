@@ -5,6 +5,9 @@ issues: https://github.com/espressif/esp-brookesia/issues
 repository: https://github.com/espressif/esp-brookesia.git
 dependencies:
   idf: ">=5.3"
+  espressif/cjson:
+    version: "^1.7.19"
+    public: true
 
   # Utilities
   espressif/cmake_utilities:

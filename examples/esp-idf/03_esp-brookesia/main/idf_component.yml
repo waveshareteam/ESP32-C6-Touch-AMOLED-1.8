@@ -5,3 +5,5 @@ dependencies:
     git: https://github.com/waveshareteam/Waveshare-ESP32-components.git
     path: bsp/esp32_c6_touch_amoled_1_8
     version: "d75c3e72be9e2248f525bcdbf9ca31f1fe8d357b"
+  espressif/esp_lvgl_port:
+    version: "2.7.2"
