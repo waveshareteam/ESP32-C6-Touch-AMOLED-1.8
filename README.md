@@ -6,15 +6,19 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/waveshareteam/ESP32-C6-Touch-AMOLED-1.8"></a>
   </p>
   <p>
-    <a href="https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8">Product Wiki</a> ·
+    <a href="README_CN.md">简体中文</a> ·
+    <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">Product Page</a> ·
+    <a href="https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8">Product Documentation</a> ·
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/releases">GitHub Releases</a> ·
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml">CI Firmware Artifacts</a> ·
     <a href="examples/esp-idf/">ESP-IDF Examples</a> ·
     <a href="examples/arduino/">Arduino V1</a> ·
     <a href="examples/arduino-v2/">Arduino V2</a> ·
-    <a href="docs/">Documentation</a> ·
-    <a href="README_CN.md">简体中文</a>
+    <a href="docs/">Repository Documentation</a>
   </p>
+  <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">
+    <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 V2 product image" width="520">
+  </a>
 </div>
 
 ---
@@ -52,7 +56,8 @@ drivers automatically.
 
 | Feature | Device / interface |
 | --- | --- |
-| MCU | ESP32-C6, target esp32c6 |
+| MCU | ESP32-C6, single-core 32-bit RISC-V up to 160 MHz (target esp32c6) |
+| Wireless | 2.4 GHz Wi-Fi 6, Bluetooth 5 LE, and IEEE 802.15.4 (Zigbee 3.0 / Thread) |
 | Memory | 16 MB Flash, no PSRAM |
 | Display | 1.8-inch 368 x 448 QSPI AMOLED |
 | V1 display / touch | SH8601 with FT3168 / FT6146 |
@@ -63,6 +68,20 @@ drivers automatically.
 | Audio | ES8311 codec, microphone input, speaker output |
 | Storage | microSD over SPI |
 | Schematics | [Schematic](Schematic/) |
+
+## Quick Start
+
+1. Identify the board revision in the table above. If it is unknown, run
+   [00_board_check](examples/esp-idf/00_board_check/) to let the BSP report it.
+2. For ESP-IDF, start with
+   [00_bsp_quickstart](examples/esp-idf/00_bsp_quickstart/); the same BSP-based
+   projects support V1 and V2.
+3. For Arduino, use [examples/arduino](examples/arduino/) for V1 or
+   [examples/arduino-v2](examples/arduino-v2/) for V2.
+4. To flash without building locally, download the matching package from a
+   successful [Build Examples run](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml).
+
+See [Getting Started](docs/GETTING_STARTED.md) for toolchain and flashing details.
 
 ## Examples
 
@@ -156,6 +175,7 @@ separate factory/recovery asset, not a CI build output. See
 | [Schematic/](Schematic/) | Board schematics |
 | [config/](config/) | Shared ESP-IDF configuration notes and overlays |
 | [docs/](docs/) | Setup, examples, CI, structure, and firmware documentation |
+| [assets/](assets/) | Product images used by repository documentation |
 
 ## Documentation
 
@@ -165,7 +185,8 @@ separate factory/recovery asset, not a CI build output. See
 - [Firmware artifacts](docs/FIRMWARE.md)
 - [Repository structure](docs/PROJECT_STRUCTURE.md)
 - [Release tools](releases/README.md)
-- [Product Wiki](https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8)
+- [Product page](https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm)
+- [Product documentation](https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8)
 
 ## Support and Contributions
 

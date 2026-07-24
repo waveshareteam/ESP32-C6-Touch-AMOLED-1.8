@@ -11,6 +11,7 @@
 | Schematic | Board schematic revisions |
 | scripts | CI example discovery |
 | docs | Repository documentation |
+| assets | Product images used by repository documentation |
 
 Reusable display, touch, and board support code belongs in
 Waveshare-ESP32-components. Product ESP-IDF examples consume the BSP as a
