@@ -1,111 +1,171 @@
-#include <stdio.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "bsp/esp-bsp.h"
+#include "driver/i2c_master.h"
+#include "esp_err.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/i2c_master.h"
-#include "esp_log.h"
 #include "qmi8658.h"
 
-#define I2C_MASTER_SCL_IO           7
-#define I2C_MASTER_SDA_IO           8
-#define I2C_MASTER_NUM              I2C_NUM_0
-#define I2C_MASTER_FREQ_HZ          400000
-
-#define QMI8658_RESET_REGISTER      0x60
-#define QMI8658_RESET_COMMAND       0xB0
-#define QMI8658_CTRL1_VALUE         0x60
-#define QMI8658_RESET_DELAY_MS      20
+#define IMU_SAMPLE_PERIOD_MS 200
+#define IMU_PROBE_TIMEOUT_MS 100
+#define QMI8658_RESET_REGISTER 0x60
+#define QMI8658_RESET_COMMAND 0xB0
+#define QMI8658_CTRL1_VALUE 0x60
+#define QMI8658_RESET_DELAY_MS 20
 
 static const char *TAG = "qmi8658_example";
 
-static esp_err_t i2c_master_init(i2c_master_bus_handle_t *bus_handle) {
-    i2c_master_bus_config_t bus_config = {
-        .i2c_port = I2C_MASTER_NUM,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .intr_priority = 0,
-        .trans_queue_depth = 0,
-        .flags.enable_internal_pullup = true
+static esp_err_t qmi8658_detect_address(i2c_master_bus_handle_t bus_handle, uint8_t *address)
+{
+    const uint8_t candidates[] = {
+        BSP_IMU_I2C_ADDRESS,
+        QMI8658_ADDRESS_LOW,
     };
 
-    return i2c_new_master_bus(&bus_config, bus_handle);
+    if (bus_handle == NULL || address == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++) {
+        const uint8_t candidate = candidates[i];
+        const esp_err_t ret = i2c_master_probe(bus_handle, candidate, IMU_PROBE_TIMEOUT_MS);
+        if (ret == ESP_OK) {
+            *address = candidate;
+            return ESP_OK;
+        }
+    }
+
+    return ESP_ERR_NOT_FOUND;
 }
 
-static esp_err_t qmi8658_soft_reset(qmi8658_dev_t *dev)
+static esp_err_t qmi8658_soft_reset(qmi8658_dev_t *imu)
 {
-    esp_err_t ret = qmi8658_write_register(dev, QMI8658_RESET_REGISTER, QMI8658_RESET_COMMAND);
+    esp_err_t ret = qmi8658_write_register(imu, QMI8658_RESET_REGISTER, QMI8658_RESET_COMMAND);
     if (ret != ESP_OK) {
         return ret;
     }
 
     vTaskDelay(pdMS_TO_TICKS(QMI8658_RESET_DELAY_MS));
-    return qmi8658_write_register(dev, QMI8658_CTRL1, QMI8658_CTRL1_VALUE);
+    return qmi8658_write_register(imu, QMI8658_CTRL1, QMI8658_CTRL1_VALUE);
 }
 
-static void qmi8658_test_task(void *arg) {
-    i2c_master_bus_handle_t bus_handle = (i2c_master_bus_handle_t)arg;
-    qmi8658_dev_t dev;
-    qmi8658_data_t data;
-
-    ESP_LOGI(TAG, "Initializing QMI8658...");
-    esp_err_t ret = qmi8658_init(&dev, bus_handle, QMI8658_ADDRESS_HIGH);
+static esp_err_t qmi8658_configure(qmi8658_dev_t *imu)
+{
+    esp_err_t ret = qmi8658_soft_reset(imu);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize QMI8658 (error: %d)", ret);
-        vTaskDelete(NULL);
-        return;
+        return ret;
     }
 
-    ret = qmi8658_soft_reset(&dev);
+    ret = qmi8658_set_accel_range(imu, QMI8658_ACCEL_RANGE_4G);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to reset QMI8658 (error: %d)", ret);
-        vTaskDelete(NULL);
-        return;
+        return ret;
     }
 
-    qmi8658_set_accel_range(&dev, QMI8658_ACCEL_RANGE_8G);
-    qmi8658_set_accel_odr(&dev, QMI8658_ACCEL_ODR_1000HZ);
-    qmi8658_set_gyro_range(&dev, QMI8658_GYRO_RANGE_512DPS);
-    qmi8658_set_gyro_odr(&dev, QMI8658_GYRO_ODR_1000HZ);
-
-    qmi8658_set_accel_unit_mps2(&dev, true);
-    qmi8658_set_gyro_unit_rads(&dev, true);
-
-    qmi8658_set_display_precision(&dev, 4);
-
-    while (1) {
-        bool ready;
-        ret = qmi8658_is_data_ready(&dev, &ready);
-        if (ret == ESP_OK && ready) {
-            ret = qmi8658_read_sensor_data(&dev, &data);
-            if (ret == ESP_OK) {
-                ESP_LOGI(TAG, "Accel: X=%.4f m/s², Y=%.4f m/s², Z=%.4f m/s²",
-                         data.accelX, data.accelY, data.accelZ);
-                ESP_LOGI(TAG, "Gyro:  X=%.4f rad/s, Y=%.4f rad/s, Z=%.4f rad/s",
-                         data.gyroX, data.gyroY, data.gyroZ);
-                ESP_LOGI(TAG, "Temp:  %.2f °C, Timestamp: %lu",
-                         data.temperature, data.timestamp);
-                ESP_LOGI(TAG, "----------------------------------------");
-            } else {
-                ESP_LOGE(TAG, "Failed to read sensor data (error: %d)", ret);
-            }
-        } else {
-            ESP_LOGE(TAG, "Data not ready or error reading status (error: %d)", ret);
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(100));
+    ret = qmi8658_set_accel_odr(imu, QMI8658_ACCEL_ODR_250HZ);
+    if (ret != ESP_OK) {
+        return ret;
     }
+
+    ret = qmi8658_set_gyro_range(imu, QMI8658_GYRO_RANGE_256DPS);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    ret = qmi8658_set_gyro_odr(imu, QMI8658_GYRO_ODR_250HZ);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    qmi8658_set_accel_unit_mps2(imu, true);
+    qmi8658_set_gyro_unit_dps(imu, true);
+    qmi8658_set_display_precision(imu, 3);
+
+    return qmi8658_enable_sensors(imu, QMI8658_ENABLE_ACCEL | QMI8658_ENABLE_GYRO);
 }
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Initializing I2C...");
-    i2c_master_bus_handle_t bus_handle;
-    esp_err_t ret = i2c_master_init(&bus_handle);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize I2C (error: %d)", ret);
+    ESP_LOGI(TAG, "QMI8658 component version %s", QMI8658_LIBRARY_VERSION);
+
+    i2c_master_bus_handle_t bus_handle = bsp_i2c_get_handle();
+    if (bus_handle == NULL) {
+        ESP_LOGE(TAG, "BSP I2C initialization failed");
         return;
     }
 
-    xTaskCreate(qmi8658_test_task, "qmi8658_test_task", 4096, bus_handle, 5, NULL);
+    uint8_t imu_address = 0;
+    esp_err_t ret = qmi8658_detect_address(bus_handle, &imu_address);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "QMI8658 not found at 0x%02x or 0x%02x",
+                 BSP_IMU_I2C_ADDRESS, QMI8658_ADDRESS_LOW);
+        return;
+    }
+    ESP_LOGI(TAG, "Detected QMI8658 at 0x%02x", imu_address);
+
+    qmi8658_dev_t imu = {0};
+    ret = qmi8658_init(&imu, bus_handle, imu_address);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "QMI8658 initialization failed: %s", esp_err_to_name(ret));
+        return;
+    }
+
+    uint8_t who_am_i = 0;
+    ret = qmi8658_get_who_am_i(&imu, &who_am_i);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "WHO_AM_I=0x%02x", who_am_i);
+    } else {
+        ESP_LOGW(TAG, "Failed to read WHO_AM_I: %s", esp_err_to_name(ret));
+    }
+
+    ret = qmi8658_configure(&imu);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "QMI8658 configuration failed: %s", esp_err_to_name(ret));
+        return;
+    }
+
+    uint32_t waiting_samples = 0;
+    while (true) {
+        bool ready = false;
+        ret = qmi8658_is_data_ready(&imu, &ready);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to read data-ready status: %s", esp_err_to_name(ret));
+            vTaskDelay(pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
+            continue;
+        }
+
+        if (!ready) {
+            if ((waiting_samples++ % 20) == 0) {
+                ESP_LOGW(TAG, "Waiting for IMU data-ready status");
+            }
+            vTaskDelay(pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
+            continue;
+        }
+
+        waiting_samples = 0;
+        qmi8658_data_t data = {0};
+        ret = qmi8658_read_sensor_data(&imu, &data);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG,
+                     "accel[m/s^2] x=% .3f y=% .3f z=% .3f | "
+                     "gyro[dps] x=% .3f y=% .3f z=% .3f | "
+                     "temp=%.2f degC ts=%" PRIu32,
+                     data.accelX,
+                     data.accelY,
+                     data.accelZ,
+                     data.gyroX,
+                     data.gyroY,
+                     data.gyroZ,
+                     data.temperature,
+                     data.timestamp);
+        } else {
+            ESP_LOGE(TAG, "Failed to read sensor data: %s", esp_err_to_name(ret));
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
+    }
 }
