@@ -52,8 +52,9 @@ The [arduino-v2](arduino-v2/) set targets CO5300 with CST820 and contains:
 - 15_ES8311
 
 The retained 04_GFX_FT3168_Image directory name matches the reference example
-layout; its V2 source uses CST820 through the compatible Arduino_CST816x driver. All V2 touch sketches use periodic interrupt
-mode.
+layout; its V2 source uses CST820 through the compatible
+<code>Arduino_CST816x</code> driver. All V2 touch sketches use periodic
+interrupt mode.
 
 Arduino CI builds only the sketches under each first-party examples directory.
 Sketches nested under bundled libraries are intentionally excluded.

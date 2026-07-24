@@ -6,15 +6,19 @@
     <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/github/license/waveshareteam/ESP32-C6-Touch-AMOLED-1.8"></a>
   </p>
   <p>
-    <a href="https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8">产品 Wiki</a> ·
+    <a href="README.md">English</a> ·
+    <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">商品页面</a> ·
+    <a href="https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8">产品文档</a> ·
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/releases">GitHub Releases</a> ·
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml">CI 固件产物</a> ·
     <a href="examples/esp-idf/">ESP-IDF 示例</a> ·
     <a href="examples/arduino/">Arduino V1</a> ·
     <a href="examples/arduino-v2/">Arduino V2</a> ·
-    <a href="docs/">开发文档</a> ·
-    <a href="README.md">English</a>
+    <a href="docs/">仓库文档</a>
   </p>
+  <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">
+    <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 V2 商品图" width="520">
+  </a>
 </div>
 
 ---
@@ -47,15 +51,33 @@ BSP 会探测触摸地址并自动选择对应的显示和触摸驱动，不需�
 
 | 功能 | 器件 / 接口 |
 | --- | --- |
-| MCU | ESP32-C6，目标 esp32c6 |
+| MCU | ESP32-C6，单核 32 位 RISC-V，最高 160 MHz（目标 esp32c6） |
+| 无线连接 | 2.4 GHz Wi-Fi 6、Bluetooth 5 LE、IEEE 802.15.4（Zigbee 3.0 / Thread） |
 | 存储 | 16 MB Flash，无 PSRAM |
 | 显示 | 1.8 英寸 368 x 448 QSPI AMOLED |
+| V1 显示 / 触摸 | SH8601 + FT3168 / FT6146 |
+| V2 显示 / 触摸 | CO5300 + CST820 |
 | 电源管理 | AXP2101 |
 | 实时时钟 | PCF85063A |
 | 运动传感器 | QMI8658 六轴 IMU |
 | 音频 | ES8311 编解码器、麦克风输入和扬声器输出 |
 | 扩展存储 | SPI microSD |
 | 原理图 | [Schematic](Schematic/) |
+
+## 快速开始
+
+1. 先按上方表格确认开发板版本；版本不确定时，可运行
+   [00_board_check](examples/esp-idf/00_board_check/) 由 BSP 输出检测结果。
+2. ESP-IDF 建议从
+   [00_bsp_quickstart](examples/esp-idf/00_bsp_quickstart/) 开始；同一套
+   BSP 工程同时支持 V1 和 V2。
+3. Arduino V1 使用 [examples/arduino](examples/arduino/)，V2 使用
+   [examples/arduino-v2](examples/arduino-v2/)。
+4. 无需本地构建时，可从成功的
+   [Build Examples 运行](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml)
+   下载对应的可刷写固件包。
+
+工具链和刷写说明见[入门指南](docs/GETTING_STARTED.md)。
 
 ## ESP-IDF 示例
 
@@ -142,6 +164,7 @@ flash.bat COMx
 | [Schematic/](Schematic/) | 开发板原理图 |
 | [config/](config/) | ESP-IDF 共用配置说明和覆盖文件 |
 | [docs/](docs/) | 入门、示例、CI、仓库结构和固件文档 |
+| [assets/](assets/) | 仓库文档使用的商品图片 |
 
 ## 文档
 
@@ -151,7 +174,8 @@ flash.bat COMx
 - [固件产物](docs/FIRMWARE.md)
 - [仓库结构](docs/PROJECT_STRUCTURE.md)
 - [Release 工具](releases/README.md)
-- [产品 Wiki](https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-1.8)
+- [商品页面](https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm)
+- [产品文档](https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8)
 
 ## 支持与贡献
 
