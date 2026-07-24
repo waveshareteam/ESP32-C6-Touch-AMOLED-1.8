@@ -7,7 +7,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "SensorQMI8658.hpp"
+#include "HWCDC.h"
 
+HWCDC USBSerial;
 Adafruit_XCA9554 expander;
 
 #define EXAMPLE_LVGL_TICK_PERIOD_MS 2
@@ -19,6 +21,7 @@ SensorQMI8658 qmi;
 
 IMUdata acc;
 IMUdata gyr;
+uint32_t lastImuUpdate = 0;
 
 lv_obj_t *label;                  // Global label object
 lv_obj_t *chart;                  // Global chart object
@@ -48,8 +51,9 @@ void Arduino_IIC_Touch_Interrupt(void) {
 #if LV_USE_LOG != 0
 /* Serial debugging */
 void my_print(const char *buf) {
-  Serial.printf(buf);
-  Serial.flush();
+  if (USBSerial) {
+    USBSerial.print(buf);
+  }
 }
 #endif
 
@@ -93,24 +97,27 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     data->point.x = touchX;
     data->point.y = touchY;
 
-    Serial.print("Data x ");
-    Serial.print(touchX);
+    if (USBSerial) {
+      USBSerial.print("Data x ");
+      USBSerial.print(touchX);
 
-    Serial.print("Data y ");
-    Serial.println(touchY);
+      USBSerial.print("Data y ");
+      USBSerial.println(touchY);
+    }
   } else {
     data->state = LV_INDEV_STATE_REL;
   }
 }
 
 void setup() {
-  Serial.begin(115200); /* prepare for possible serial debug */
+  USBSerial.begin(115200);
+  USBSerial.setTxTimeoutMs(0);  // Prevent debug output from blocking the sketch.
   Wire.begin(IIC_SDA, IIC_SCL);
 
   // pinMode(LCD_EN, OUTPUT);
   // digitalWrite(LCD_EN, HIGH);
-if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
-    Serial.println("Failed to find XCA9554 chip");
+  if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
+    USBSerial.println("Failed to find XCA9554 chip");
     while (1)
       ;
   }
@@ -121,10 +128,10 @@ if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
   expander.digitalWrite(5, 1);
 
   while (FT3168->begin() == false) {
-    Serial.println("FT3168 initialization fail");
+    USBSerial.println("FT3168 initialization fail");
     delay(2000);
   }
-  Serial.println("FT3168 initialization successfully");
+  USBSerial.println("FT3168 initialization successfully");
 
   gfx->begin();
   gfx->setBrightness(200);
@@ -132,8 +139,8 @@ if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
   String LVGL_Arduino = "Hello Arduino! ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
-  Serial.println(LVGL_Arduino);
-  Serial.println("I am LVGL_Arduino");
+  USBSerial.println(LVGL_Arduino);
+  USBSerial.println("I am LVGL_Arduino");
 
   lv_init();
 
@@ -197,10 +204,10 @@ if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
   acc_series_y = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_GREEN), LV_CHART_AXIS_PRIMARY_Y);
   acc_series_z = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_BLUE), LV_CHART_AXIS_PRIMARY_Y);
 
-  Serial.println("Setup done");
+  USBSerial.println("Setup done");
 
-if (!qmi.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
-    Serial.println("Failed to find QMI8658 - check your wiring!");
+  if (!qmi.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
+    USBSerial.println("Failed to find QMI8658 - check your wiring!");
     while (1) {
       delay(1000);
     }
@@ -209,22 +216,26 @@ if (!qmi.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
   qmi.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_1000Hz, SensorQMI8658::LPF_MODE_0);
   qmi.enableAccelerometer();
 
-  Serial.println("Read data now...");
+  USBSerial.println("Read data now...");
 }
 
 void loop() {
   lv_timer_handler(); /* let the GUI do its work */
   delay(5);
 
-  if (qmi.getDataReady()) {
+  const uint32_t now = millis();
+  if (now - lastImuUpdate >= 50 && qmi.getDataReady()) {
+    lastImuUpdate = now;
     if (qmi.getAccelerometer(acc.x, acc.y, acc.z)) {
-      Serial.print("{ACCEL: ");
-      Serial.print(acc.x);
-      Serial.print(",");
-      Serial.print(acc.y);
-      Serial.print(",");
-      Serial.print(acc.z);
-      Serial.println("}");
+      if (USBSerial) {
+        USBSerial.print("{ACCEL: ");
+        USBSerial.print(acc.x);
+        USBSerial.print(",");
+        USBSerial.print(acc.y);
+        USBSerial.print(",");
+        USBSerial.print(acc.z);
+        USBSerial.println("}");
+      }
 
       // Update chart with new accelerometer data
       lv_chart_set_next_value(chart, acc_series_x, acc.x);
@@ -233,14 +244,15 @@ void loop() {
     }
 
     if (qmi.getGyroscope(gyr.x, gyr.y, gyr.z)) {
-      Serial.print("{GYRO: ");
-      Serial.print(gyr.x);
-      Serial.print(",");
-      Serial.print(gyr.y);
-      Serial.print(",");
-      Serial.print(gyr.z);
-      Serial.println("}");
+      if (USBSerial) {
+        USBSerial.print("{GYRO: ");
+        USBSerial.print(gyr.x);
+        USBSerial.print(",");
+        USBSerial.print(gyr.y);
+        USBSerial.print(",");
+        USBSerial.print(gyr.z);
+        USBSerial.println("}");
+      }
     }
   }
-  delay(20);  // Increase the frequency of data polling
 }

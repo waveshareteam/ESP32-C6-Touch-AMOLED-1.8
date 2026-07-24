@@ -43,8 +43,9 @@ void Arduino_IIC_Touch_Interrupt(void) {
 #if LV_USE_LOG != 0
 /* Serial debugging */
 void my_print(const char *buf) {
-  USBSerial.printf(buf);
-  USBSerial.flush();
+  if (USBSerial) {
+    USBSerial.print(buf);
+  }
 }
 #endif
 
@@ -88,18 +89,21 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     data->point.x = touchX;
     data->point.y = touchY;
 
-    USBSerial.print("Data x ");
-    USBSerial.print(touchX);
+    if (USBSerial) {
+      USBSerial.print("Data x ");
+      USBSerial.print(touchX);
 
-    USBSerial.print("Data y ");
-    USBSerial.println(touchY);
+      USBSerial.print("Data y ");
+      USBSerial.println(touchY);
+    }
   } else {
     data->state = LV_INDEV_STATE_REL;
   }
 }
 
 void setup() {
-  USBSerial.begin(115200); /* prepare for possible serial debug */
+  USBSerial.begin(115200);
+  USBSerial.setTxTimeoutMs(0);  // Prevent debug output from blocking the sketch.
   Wire.begin(IIC_SDA, IIC_SCL);
 
   if (!expander.begin(0x20)) {  // Replace with actual I2C address if different
@@ -205,18 +209,20 @@ void loop() {
   if (millis() - lastMillis > 1000) {
     lastMillis = millis();
     RTC_DateTime datetime = rtc.getDateTime();
-    USBSerial.printf(" Year :");
-    USBSerial.print(datetime.getYear());
-    USBSerial.printf(" Month:");
-    USBSerial.print(datetime.getMonth());
-    USBSerial.printf(" Day :");
-    USBSerial.print(datetime.getDay());
-    USBSerial.printf(" Hour:");
-    USBSerial.print(datetime.getHour());
-    USBSerial.printf(" Minute:");
-    USBSerial.print(datetime.getMinute());
-    USBSerial.printf(" Sec :");
-    USBSerial.println(datetime.getSecond());
+    if (USBSerial) {
+      USBSerial.print(" Year :");
+      USBSerial.print(datetime.getYear());
+      USBSerial.print(" Month:");
+      USBSerial.print(datetime.getMonth());
+      USBSerial.print(" Day :");
+      USBSerial.print(datetime.getDay());
+      USBSerial.print(" Hour:");
+      USBSerial.print(datetime.getHour());
+      USBSerial.print(" Minute:");
+      USBSerial.print(datetime.getMinute());
+      USBSerial.print(" Sec :");
+      USBSerial.println(datetime.getSecond());
+    }
 
     char buf[32];
     snprintf(buf, sizeof(buf), "%02d:%02d:%02d\n%02d-%02d-%04d",

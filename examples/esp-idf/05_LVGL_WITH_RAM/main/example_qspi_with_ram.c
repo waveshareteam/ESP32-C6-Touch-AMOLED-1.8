@@ -1,4 +1,5 @@
 #include "bsp/esp-bsp.h"
+#include "esp_idf_version.h"
 #include "esp_log.h"
 #include "lv_demos.h"
 
@@ -6,7 +7,14 @@ static const char *TAG = "lvgl_with_ram";
 
 void app_main(void)
 {
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
+    esp_log_level_t i2c_log_level = esp_log_level_get("i2c.master");
+    esp_log_level_set("i2c.master", ESP_LOG_NONE);
+#endif
     const bsp_board_variant_t variant = bsp_board_detect();
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
+    esp_log_level_set("i2c.master", i2c_log_level);
+#endif
     ESP_LOGI(TAG, "Starting LVGL on %s", bsp_board_variant_to_name(variant));
 
     lv_display_t *display = bsp_display_start();

@@ -10,6 +10,11 @@
 #define I2C_MASTER_NUM              I2C_NUM_0
 #define I2C_MASTER_FREQ_HZ          400000
 
+#define QMI8658_RESET_REGISTER      0x60
+#define QMI8658_RESET_COMMAND       0xB0
+#define QMI8658_CTRL1_VALUE         0x60
+#define QMI8658_RESET_DELAY_MS      20
+
 static const char *TAG = "qmi8658_example";
 
 static esp_err_t i2c_master_init(i2c_master_bus_handle_t *bus_handle) {
@@ -27,6 +32,17 @@ static esp_err_t i2c_master_init(i2c_master_bus_handle_t *bus_handle) {
     return i2c_new_master_bus(&bus_config, bus_handle);
 }
 
+static esp_err_t qmi8658_soft_reset(qmi8658_dev_t *dev)
+{
+    esp_err_t ret = qmi8658_write_register(dev, QMI8658_RESET_REGISTER, QMI8658_RESET_COMMAND);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(QMI8658_RESET_DELAY_MS));
+    return qmi8658_write_register(dev, QMI8658_CTRL1, QMI8658_CTRL1_VALUE);
+}
+
 static void qmi8658_test_task(void *arg) {
     i2c_master_bus_handle_t bus_handle = (i2c_master_bus_handle_t)arg;
     qmi8658_dev_t dev;
@@ -37,6 +53,14 @@ static void qmi8658_test_task(void *arg) {
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize QMI8658 (error: %d)", ret);
         vTaskDelete(NULL);
+        return;
+    }
+
+    ret = qmi8658_soft_reset(&dev);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to reset QMI8658 (error: %d)", ret);
+        vTaskDelete(NULL);
+        return;
     }
 
     qmi8658_set_accel_range(&dev, QMI8658_ACCEL_RANGE_8G);
