@@ -175,6 +175,38 @@ class MarkdownAuditTests(unittest.TestCase):
         self.assertIn("BILINGUAL_LINK_MISSING", self.codes(report))
         self.assertIn("WRONG_LANGUAGE_INTERNAL_LINK", self.codes(report))
 
+    def test_narrow_pair_exemption_preserves_reciprocal_links(self) -> None:
+        self.write("README_CN.md", ZH_HOME.replace('href="README.md"', 'href="missing.md"'))
+        config = audit_markdown.load_config(None)
+        config["bilingual_pairs"] = [{"english": "README.md", "chinese": "README_CN.md"}]
+        config["pair_exempt_patterns"] = ["README_CN.md"]
+        config["homepage_pairs"] = []
+
+        report = self.report(self.changes("README.md", "README_CN.md", status="M"), config=config)
+
+        self.assertNotIn("NONSTANDARD_FIRST_PARTY_LANGUAGE_SUFFIX", self.codes(report))
+        self.assertIn("BILINGUAL_LINK_MISSING", self.codes(report))
+
+    def test_workflow_markdown_audits_are_strict(self) -> None:
+        workflow = (SKILL_ROOT / ".github" / "workflows" / "examples.yml").read_text(encoding="utf-8")
+        base_scope = workflow.split(
+            "      - name: Audit Markdown in the pull-request base scope\n", 1
+        )[1].split("      - name: Audit the complete repository scope\n", 1)[0]
+        complete_scope = workflow.split(
+            "      - name: Audit the complete repository scope\n", 1
+        )[1].split("\n\n  discover-esp-idf:", 1)[0]
+
+        self.assertIn(
+            'python3 scripts/audit_markdown.py . --base "${{ github.event.pull_request.base.sha }}"\n'
+            "          --strict --config config/markdown-audit-config.json",
+            base_scope,
+        )
+        self.assertIn(
+            "python3 scripts/audit_markdown.py . --all\n"
+            "          --strict --config config/markdown-audit-config.json",
+            complete_scope,
+        )
+
     def test_side_by_side_language_index_is_not_wrong_language(self) -> None:
         self.write(
             "docs/index.md",

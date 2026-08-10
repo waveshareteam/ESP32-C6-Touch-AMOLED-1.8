@@ -16,9 +16,7 @@
     <a href="examples/arduino-v2/">🔧 Arduino V2</a> ·
     <a href="docs/">📚 Repository Documentation</a>
   </p>
-  <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">
-    <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 V2 product image" width="520">
-  </a>
+  <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 product image" width="520">
 </div>
 
 ---

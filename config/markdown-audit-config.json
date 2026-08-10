@@ -1,7 +1,9 @@
 {
   "classification_rules": [],
   "exclude_patterns": [],
-  "pair_exempt_patterns": [],
+  "pair_exempt_patterns": [
+    "README_CN.md"
+  ],
   "language_link_exempt_patterns": [],
   "relative_link_ignore_patterns": [],
   "docs_only_allowed_patterns": [],
