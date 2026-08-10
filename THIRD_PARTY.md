@@ -1,5 +1,7 @@
 # Third-Party Software
 
+[简体中文](THIRD_PARTY_ZH.md)
+
 This repository includes source examples, firmware assets, managed component references, and bundled third-party libraries.
 
 ## Managed ESP-IDF Components
@@ -16,11 +18,11 @@ The exact versions are declared in each example's `main/idf_component.yml` and r
 
 The Arduino example trees include bundled libraries such as LVGL, Adafruit BusIO, SensorLib, GFX Library for Arduino, and board-specific helper libraries. These libraries keep their upstream licenses in their own directories.
 
-The `examples/esp-idf/90_axp2101_pmu` diagnostic includes a local XPowersLib port for low-level PMU bring-up. XPowersLib files retain their upstream MIT license notices.
+The `examples/esp-idf/01_AXP2101` diagnostic includes a local XPowersLib port for low-level PMU bring-up. XPowersLib files retain their upstream MIT license notices.
 
 ## Firmware Binaries
 
-Files under `Firmware/` are prebuilt factory firmware images for this board. See [Firmware/README.txt](Firmware/README.txt) for usage notes.
+Files under `Firmware/` are prebuilt factory firmware images for this board. See [Firmware/README.md](Firmware/README.md) for usage notes.
 
 ## License Summary
 

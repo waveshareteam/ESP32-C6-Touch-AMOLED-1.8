@@ -1,5 +1,7 @@
 # Getting started
 
+[简体中文](GETTING_STARTED_ZH.md)
+
 ## Identify the board revision
 
 V1 uses SH8601 with FT3168 / FT6146. V2 uses CO5300 with CST820. The two
@@ -21,9 +23,9 @@ idf.py -p PORT flash monitor
 ~~~
 
 Run 00_bsp_quickstart next to check the detected display and touch path. The
-project manifest fetches the BSP from Waveshare-ESP32-components by Git path,
-pinned to commit d75c3e72be9e2248f525bcdbf9ca31f1fe8d357b until version 1.0.0 is available from the
-component registry.
+project manifest resolves `waveshare/esp32_c6_touch_amoled_1_8` from the
+Component Registry with `^1.0.0`. CI covers ESP-IDF v5.5.5 and v6.0.2; the
+1.x range is intended for non-breaking BSP updates.
 
 ## Arduino
 

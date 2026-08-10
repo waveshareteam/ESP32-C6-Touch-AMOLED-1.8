@@ -1,5 +1,7 @@
 # Firmware artifacts
 
+[简体中文](FIRMWARE_ZH.md)
+
 This repository contains two different firmware sources.
 
 ## CI source builds

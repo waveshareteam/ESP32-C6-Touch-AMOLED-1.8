@@ -2,28 +2,9 @@ name: Build Examples
 
 on:
   push:
-    branches:
-      - main
-      - master
-    tags:
-      - "v*"
-    paths:
-      - ".github/workflows/examples.yml"
-      - "scripts/discover_examples.py"
-      - "releases/package_firmware.py"
-      - "config/**"
-      - "examples/esp-idf/**"
-      - "examples/arduino/**"
-      - "examples/arduino-v2/**"
+    branches: [main, master]
+    tags: ["v*"]
   pull_request:
-    paths:
-      - ".github/workflows/examples.yml"
-      - "scripts/discover_examples.py"
-      - "releases/package_firmware.py"
-      - "config/**"
-      - "examples/esp-idf/**"
-      - "examples/arduino/**"
-      - "examples/arduino-v2/**"
   workflow_dispatch:
     inputs:
       target:
@@ -39,7 +20,28 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  lightweight:
+    name: Lightweight routing and Markdown gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Run static routing and Markdown tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Audit Markdown in the pull-request base scope
+        if: github.event_name == 'pull_request'
+        run: >-
+          python3 scripts/audit_markdown.py . --base "${{ github.event.pull_request.base.sha }}"
+          --config config/markdown-audit-config.json
+      - name: Audit the complete repository scope
+        if: github.event_name != 'pull_request'
+        run: >-
+          python3 scripts/audit_markdown.py . --all
+          --config config/markdown-audit-config.json
+
   discover-esp-idf:
+    needs: lightweight
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.discover.outputs.matrix }}
@@ -50,18 +52,43 @@ jobs:
           fetch-depth: 0
       - id: discover
         env:
-          SELECTOR: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target || '' }}
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_REF: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TARGET: ${{ github.event.inputs.target }}
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 scripts/discover_examples.py \
-            --surface esp-idf \
-            --selector "$SELECTOR" \
-            --base-ref "$BASE_REF" \
-            --head-ref "$HEAD_REF" \
-            --fallback-all \
-            --idf-versions v5.5.5,v6.0.2 \
-            --github-output "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SELECTOR="$DISPATCH_TARGET"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            SELECTOR=""
+          else
+            SELECTOR="all"
+          fi
+          python3 scripts/discover_examples.py --surface esp-idf --selector "$SELECTOR" --base-ref "$BASE_REF" --head-ref "${{ github.sha }}" --idf-versions v5.5.5,v6.0.2 --github-output "$GITHUB_OUTPUT"
+
+  discover-arduino:
+    needs: lightweight
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+      count: ${{ steps.discover.outputs.count }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: discover
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TARGET: ${{ github.event.inputs.target }}
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SELECTOR="$DISPATCH_TARGET"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            SELECTOR=""
+          else
+            SELECTOR="all"
+          fi
+          python3 scripts/discover_examples.py --surface arduino --selector "$SELECTOR" --base-ref "$BASE_REF" --head-ref "${{ github.sha }}" --arduino-core 3.3.11 --fqbn esp32:esp32:esp32c6:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB --github-output "$GITHUB_OUTPUT"
 
   build-esp-idf:
     needs: discover-esp-idf
@@ -84,46 +111,12 @@ jobs:
         shell: bash
         run: |
           BUILD_DIR="$GITHUB_WORKSPACE/build/${{ matrix.name }}-${{ matrix.idf }}"
-          python3 releases/package_firmware.py \
-            --framework esp-idf \
-            --project "${{ matrix.path }}" \
-            --build-dir "$BUILD_DIR" \
-            --name "ESP32-C6-Touch-AMOLED-1.8-${{ matrix.name }}-esp-idf-${{ matrix.idf }}-esp32c6" \
-            --framework-version "${{ matrix.idf }}" \
-            --target esp32c6 \
-            --git-sha "${{ github.sha }}" \
-            --output-dir release-artifacts
-      - name: Upload firmware artifact
-        uses: actions/upload-artifact@v7
+          python3 releases/package_firmware.py --framework esp-idf --project "${{ matrix.path }}" --build-dir "$BUILD_DIR" --name "ESP32-C6-Touch-AMOLED-1.8-${{ matrix.name }}-esp-idf-${{ matrix.idf }}-esp32c6" --framework-version "${{ matrix.idf }}" --target esp32c6 --git-sha "${{ github.sha }}" --output-dir release-artifacts
+      - uses: actions/upload-artifact@v7
         with:
           name: firmware-esp-idf-${{ matrix.name }}-${{ matrix.idf }}
           path: release-artifacts/*.zip
           if-no-files-found: error
-
-  discover-arduino:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.discover.outputs.matrix }}
-      count: ${{ steps.discover.outputs.count }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - id: discover
-        env:
-          SELECTOR: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target || '' }}
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_REF: ${{ github.sha }}
-        run: |
-          python3 scripts/discover_examples.py \
-            --surface arduino \
-            --selector "$SELECTOR" \
-            --base-ref "$BASE_REF" \
-            --head-ref "$HEAD_REF" \
-            --fallback-all \
-            --arduino-core 3.3.11 \
-            --fqbn esp32:esp32:esp32c6:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB \
-            --github-output "$GITHUB_OUTPUT"
 
   build-arduino:
     needs: discover-arduino
@@ -142,26 +135,10 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@${{ matrix.core }}
       - name: Compile ${{ matrix.path }}
-        run: |
-          arduino-cli compile \
-            --fqbn "${{ matrix.fqbn }}" \
-            --libraries "${{ matrix.libraries }}" \
-            --export-binaries \
-            --output-dir "build/${{ matrix.name }}-${{ matrix.core }}" \
-            "${{ matrix.path }}"
+        run: arduino-cli compile --fqbn "${{ matrix.fqbn }}" --libraries "${{ matrix.libraries }}" --export-binaries --output-dir "build/${{ matrix.name }}-${{ matrix.core }}" "${{ matrix.path }}"
       - name: Package firmware
-        run: |
-          python3 releases/package_firmware.py \
-            --framework arduino \
-            --project "${{ matrix.path }}" \
-            --build-dir "build/${{ matrix.name }}-${{ matrix.core }}" \
-            --name "ESP32-C6-Touch-AMOLED-1.8-${{ matrix.name }}-arduino-${{ matrix.core }}-esp32c6" \
-            --framework-version "${{ matrix.core }}" \
-            --target esp32c6 \
-            --git-sha "${{ github.sha }}" \
-            --output-dir release-artifacts
-      - name: Upload firmware artifact
-        uses: actions/upload-artifact@v7
+        run: python3 releases/package_firmware.py --framework arduino --project "${{ matrix.path }}" --build-dir "build/${{ matrix.name }}-${{ matrix.core }}" --name "ESP32-C6-Touch-AMOLED-1.8-${{ matrix.name }}-arduino-${{ matrix.core }}-esp32c6" --framework-version "${{ matrix.core }}" --target esp32c6 --git-sha "${{ github.sha }}" --output-dir release-artifacts
+      - uses: actions/upload-artifact@v7
         with:
           name: firmware-arduino-${{ matrix.name }}-${{ matrix.core }}
           path: release-artifacts/*.zip

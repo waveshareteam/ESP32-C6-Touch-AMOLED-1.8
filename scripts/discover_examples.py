@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Discover first-party examples for GitHub Actions matrices."""
+"""Fail-closed discovery and changed-file routing for example CI matrices."""
 
 from __future__ import annotations
 
@@ -14,24 +14,37 @@ from pathlib import Path
 
 ESP_IDF_ROOT = Path("examples/esp-idf")
 ARDUINO_ROOTS = (Path("examples/arduino"), Path("examples/arduino-v2"))
-COMMON_GLOBAL_PATTERNS = (
-    ".github/workflows/examples.yml",
+GLOBAL_PATTERNS = (
+    ".github/workflows/**",
     "scripts/discover_examples.py",
     "releases/package_firmware.py",
 )
-SURFACE_GLOBAL_PATTERNS = {
-    "esp-idf": ("config/**",),
-    "arduino": (),
-}
+NON_BUILD_PATTERNS = (
+    ".github/ISSUE_TEMPLATE/**",
+    ".github/PULL_REQUEST_TEMPLATE*",
+    "CODE_OF_CONDUCT*",
+    "CONTRIBUTING*",
+    "LICENSE*",
+    "SECURITY*",
+    "SUPPORT*",
+    "THIRD_PARTY*",
+    "assets/markdown-audit-config.json",
+    "config/markdown-audit-config.json",
+    "scripts/audit_markdown.py",
+    "tests/**",
+)
+DOCUMENTATION_ASSET_PATTERNS = (
+    "assets/*.gif", "assets/*.jpeg", "assets/*.jpg", "assets/*.png", "assets/*.svg", "assets/*.webp",
+    "docs/**/*.gif", "docs/**/*.jpeg", "docs/**/*.jpg", "docs/**/*.png", "docs/**/*.svg", "docs/**/*.webp",
+)
+
+
+class ScopeUnavailable(RuntimeError):
+    """The event did not provide a complete, reviewable change scope."""
 
 
 def sanitize_name(path: Path) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", path.as_posix()).strip(".-")
-
-
-def run_git(args: list[str]) -> list[str]:
-    result = subprocess.run(["git", *args], check=True, text=True, stdout=subprocess.PIPE)
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
 def is_esp_idf_project(path: Path) -> bool:
@@ -41,133 +54,177 @@ def is_esp_idf_project(path: Path) -> bool:
 def list_esp_idf_examples() -> list[dict[str, str]]:
     if not ESP_IDF_ROOT.is_dir():
         return []
-    examples = []
-    for path in sorted(ESP_IDF_ROOT.iterdir(), key=lambda item: item.as_posix().lower()):
-        if path.is_dir() and is_esp_idf_project(path):
-            examples.append({"name": sanitize_name(path.relative_to(ESP_IDF_ROOT)), "path": path.as_posix()})
-    return examples
-
-
-def sketch_project_dir(sketch: Path) -> Path:
-    if sketch.parent.name == sketch.stem:
-        return sketch.parent
-    return sketch.parent
+    return [
+        {"name": sanitize_name(path.relative_to(ESP_IDF_ROOT)), "path": path.as_posix()}
+        for path in sorted(ESP_IDF_ROOT.iterdir(), key=lambda item: item.as_posix().lower())
+        if path.is_dir() and is_esp_idf_project(path)
+    ]
 
 
 def list_arduino_examples() -> list[dict[str, str]]:
     examples: list[dict[str, str]] = []
     for root in ARDUINO_ROOTS:
-        first_party_root = root / "examples"
-        libraries = root / "libraries"
-        if not first_party_root.is_dir():
+        sketches_root, libraries = root / "examples", root / "libraries"
+        if not sketches_root.is_dir():
             continue
         seen: set[Path] = set()
-        for sketch in sorted(first_party_root.rglob("*.ino"), key=lambda item: item.as_posix().lower()):
-            project = sketch_project_dir(sketch)
+        for sketch in sorted(sketches_root.rglob("*.ino"), key=lambda item: item.as_posix().lower()):
+            project = sketch.parent
             if project in seen:
                 continue
             seen.add(project)
-            rel = project.relative_to(first_party_root)
-            examples.append(
-                {
-                    "name": sanitize_name(Path(root.name) / rel),
-                    "path": project.as_posix(),
-                    "libraries": libraries.as_posix(),
-                }
-            )
+            examples.append({
+                "name": sanitize_name(Path(root.name) / project.relative_to(sketches_root)),
+                "path": project.as_posix(),
+                "libraries": libraries.as_posix(),
+            })
     return examples
 
 
 def all_examples(surface: str) -> list[dict[str, str]]:
-    if surface == "esp-idf":
-        return list_esp_idf_examples()
-    if surface == "arduino":
-        return list_arduino_examples()
-    raise ValueError(f"Unsupported surface: {surface}")
+    return list_esp_idf_examples() if surface == "esp-idf" else list_arduino_examples()
 
 
 def matches_selector(example: dict[str, str], selector: str) -> bool:
     selector = selector.replace("\\", "/").strip().strip("/")
-    if not selector or selector == "all":
+    if selector == "all":
         return True
     path = example["path"].strip("/")
-    if selector == path or selector == example["name"] or selector == Path(path).name:
-        return True
-    if path.startswith(selector + "/"):
-        return True
-    if "/" not in selector and selector in Path(path).parts:
-        return True
-    return path.endswith("/" + selector)
+    return selector in {path, example["name"], Path(path).name} or path.startswith(selector + "/")
 
 
-def changed_paths(base_ref: str | None, head_ref: str) -> list[str]:
+def is_documentation(path: str) -> bool:
+    return path.lower().endswith((".md", ".markdown")) or any(
+        fnmatch.fnmatch(path, pattern) for pattern in DOCUMENTATION_ASSET_PATTERNS
+    )
+
+
+def is_firmware_path(path: str) -> bool:
+    return path.casefold().startswith("firmware/")
+
+
+def changed_paths(base_ref: str | None, head_ref: str, changed_file: str | None) -> list[str]:
+    if changed_file:
+        try:
+            lines = Path(changed_file).read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            raise ScopeUnavailable(f"cannot read changed-files input: {error}") from error
+        paths: list[str] = []
+        for line in lines:
+            fields = line.split("\t")
+            if not line.strip():
+                continue
+            # Accept plain paths and Git name-status records, including renames.
+            paths.extend(field.strip() for field in (fields[1:] if len(fields) > 1 else fields) if field.strip())
+        if not paths:
+            raise ScopeUnavailable("changed-files input is empty")
+        return paths
+    if not base_ref or set(base_ref) == {"0"}:
+        raise ScopeUnavailable("a non-empty base ref is required for automatic routing")
     try:
-        if base_ref:
-            if set(base_ref) == {"0"}:
-                return []
-            return run_git(["diff", "--name-only", f"{base_ref}...{head_ref}"])
-        return run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", head_ref])
-    except subprocess.CalledProcessError:
-        return []
+        result = subprocess.run(
+            ["git", "diff", "--name-status", "-M", f"{base_ref}...{head_ref}"],
+            check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as error:
+        raise ScopeUnavailable(f"cannot read diff: {error.stderr.strip()}") from error
+    paths: list[str] = []
+    for line in result.stdout.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 2:
+            continue
+        # Renames carry both old and new paths; deletions carry the removed path.
+        paths.extend(field.strip() for field in fields[1:] if field.strip())
+    if not paths:
+        raise ScopeUnavailable("diff is empty")
+    return paths
 
 
-def affected_by_paths(example: dict[str, str], paths: list[str], surface: str) -> bool:
-    example_path = example["path"].strip("/")
-    global_patterns = COMMON_GLOBAL_PATTERNS + SURFACE_GLOBAL_PATTERNS[surface]
-    for changed in paths:
-        changed = changed.strip().strip("/")
-        if any(fnmatch.fnmatch(changed, pattern) for pattern in global_patterns):
-            return True
-        if changed == example_path or changed.startswith(example_path + "/"):
-            return True
-        if surface == "arduino":
-            libraries = example.get("libraries", "").strip("/")
-            if libraries and (changed == libraries or changed.startswith(libraries + "/")):
-                return True
-    return False
+def route_scope(paths: list[str]) -> dict[str, object]:
+    """Expose non-build surfaces so CI can report their independent scope."""
+    return {
+        "firmware_touched": any(is_firmware_path(path.replace("\\", "/").strip("/")) for path in paths),
+        "unknown_paths": [],
+    }
 
 
-def select_examples(surface: str, selector: str, base_ref: str | None, head_ref: str, fallback_all: bool) -> list[dict[str, str]]:
+def route_examples(surface: str, paths: list[str], scope: dict[str, object] | None = None) -> list[dict[str, str]]:
     examples = all_examples(surface)
-    selector = selector.replace("\\", "/").strip().strip("/")
+    selected: list[dict[str, str]] = []
+    global_change = False
+    unknown_change = False
+    for raw_path in paths:
+        path = raw_path.replace("\\", "/").strip("/")
+        if not path or is_firmware_path(path):
+            continue
+        if is_documentation(path) or any(fnmatch.fnmatch(path, pattern) for pattern in NON_BUILD_PATTERNS):
+            continue
+        if any(fnmatch.fnmatch(path, pattern) for pattern in GLOBAL_PATTERNS):
+            global_change = True
+            continue
+        if path.startswith("config/"):
+            if surface == "esp-idf":
+                global_change = True
+            continue
+        if surface == "esp-idf" and any(path.startswith(root.as_posix() + "/") for root in ARDUINO_ROOTS):
+            continue
+        if surface == "arduino" and path.startswith(ESP_IDF_ROOT.as_posix() + "/"):
+            continue
+        matched = False
+        for example in examples:
+            example_path = example["path"].strip("/")
+            if path == example_path or path.startswith(example_path + "/"):
+                selected.append(example)
+                matched = True
+            if surface == "arduino":
+                libraries = example["libraries"].strip("/")
+                if path == libraries or path.startswith(libraries + "/"):
+                    global_change = True
+                    matched = True
+        if not matched:
+            unknown_change = True
+            if scope is not None:
+                cast_unknown = scope["unknown_paths"]
+                assert isinstance(cast_unknown, list)
+                cast_unknown.append(path)
+    if global_change or unknown_change:
+        return examples
+    unique = {item["path"]: item for item in selected}
+    return [unique[key] for key in sorted(unique)]
+
+
+def select_examples(args: argparse.Namespace, scope: dict[str, object] | None = None) -> list[dict[str, str]]:
+    selector = args.selector.replace("\\", "/").strip().strip("/")
+    examples = all_examples(args.surface)
     if selector:
         selected = [example for example in examples if matches_selector(example, selector)]
-    else:
-        paths = changed_paths(base_ref, head_ref)
-        selected = [example for example in examples if affected_by_paths(example, paths, surface)]
-        if fallback_all and not selected:
-            selected = examples
-    return selected
+        if not selected:
+            raise ScopeUnavailable(f"selector did not match a {args.surface} example: {selector}")
+        return selected
+    paths = changed_paths(args.base_ref, args.head_ref, args.changed_files)
+    if scope is not None:
+        scope.update(route_scope(paths))
+    return route_examples(args.surface, paths, scope)
 
 
 def build_matrix(args: argparse.Namespace, selected: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
     include: list[dict[str, str]] = []
     if args.surface == "esp-idf":
-        versions = [item.strip() for item in args.idf_versions.split(",") if item.strip()]
         for example in selected:
-            for idf in versions:
+            for idf in (item.strip() for item in args.idf_versions.split(",") if item.strip()):
                 include.append({"name": example["name"], "path": example["path"], "idf": idf})
     else:
-        for example in selected:
-            include.append(
-                {
-                    "name": example["name"],
-                    "path": example["path"],
-                    "libraries": example["libraries"],
-                    "core": args.arduino_core,
-                    "fqbn": args.fqbn,
-                }
-            )
+        include = [{**example, "core": args.arduino_core, "fqbn": args.fqbn} for example in selected]
     return {"include": include}
 
 
-def write_github_output(path: str, matrix: dict[str, list[dict[str, str]]]) -> None:
+def write_github_output(path: str, matrix: dict[str, list[dict[str, str]]], scope: dict[str, object]) -> None:
     if not path:
         return
-    count = len(matrix["include"])
     with open(path, "a", encoding="utf-8") as output:
         output.write(f"matrix={json.dumps(matrix, separators=(',', ':'))}\n")
-        output.write(f"count={count}\n")
+        output.write(f"count={len(matrix['include'])}\n")
+        output.write(f"scope={json.dumps(scope, separators=(',', ':'))}\n")
 
 
 def main() -> int:
@@ -176,17 +233,20 @@ def main() -> int:
     parser.add_argument("--selector", default="")
     parser.add_argument("--base-ref")
     parser.add_argument("--head-ref", default="HEAD")
-    parser.add_argument("--fallback-all", action="store_true")
+    parser.add_argument("--changed-files")
     parser.add_argument("--idf-versions", default="v5.5.5,v6.0.2")
     parser.add_argument("--arduino-core", default="3.3.11")
     parser.add_argument("--fqbn", default="esp32:esp32:esp32c6:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB")
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
     args = parser.parse_args()
-
-    selected = select_examples(args.surface, args.selector, args.base_ref, args.head_ref, args.fallback_all)
-    matrix = build_matrix(args, selected)
-    write_github_output(args.github_output, matrix)
-    print(json.dumps(matrix, separators=(",", ":")))
+    try:
+        scope: dict[str, object] = {"firmware_touched": False, "unknown_paths": []}
+        matrix = build_matrix(args, select_examples(args, scope))
+    except ScopeUnavailable as error:
+        parser.error(str(error))
+        return 2
+    write_github_output(args.github_output, matrix, scope)
+    print(json.dumps({"matrix": matrix, "scope": scope}, separators=(",", ":")))
     return 0
 
 

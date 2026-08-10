@@ -1,5 +1,7 @@
 # LVGL with internal RAM
 
+[简体中文](README_ZH.md)
+
 This example starts LVGL through the managed
 waveshare/esp32_c6_touch_amoled_1_8 BSP and opens the LVGL music demo.
 
