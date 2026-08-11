@@ -1,5 +1,7 @@
 # Support
 
+[简体中文](SUPPORT_ZH.md)
+
 Use the official product wiki and repository issues for customer support and example feedback.
 
 ## Product Resources
@@ -19,4 +21,4 @@ Please include:
 - Any connected peripherals, SD card, speaker, headphones, or jumper wires.
 - Steps already tried, including whether `00_board_check` passes.
 
-For ESP-IDF setup and example order, start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) and [docs/EXAMPLES_GUIDE.md](docs/EXAMPLES_GUIDE.md).
+For ESP-IDF setup and example order, start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) and the [example index](examples/README.md).

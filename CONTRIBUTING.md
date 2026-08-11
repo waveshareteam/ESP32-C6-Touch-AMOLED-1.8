@@ -1,5 +1,7 @@
 # Contributing
 
+[简体中文](CONTRIBUTING_ZH.md)
+
 Thank you for helping improve the ESP32-C6-Touch-AMOLED-1.8 examples.
 
 This repository is customer-facing, so changes should keep the examples easy to build, easy to compare, and safe to run on the board.
@@ -21,9 +23,9 @@ New ESP-IDF examples should be standalone projects under `examples/esp-idf/<numb
 - `CMakeLists.txt`
 - `main/CMakeLists.txt`
 - `main/` source files
-- `sdkconfig.defaults`
+- `sdkconfig.defaults` only when the example needs non-default Kconfig values
 
-Use the learning order in [docs/EXAMPLES_GUIDE.md](docs/EXAMPLES_GUIDE.md): simple serial examples first, then board services, peripherals, audio, display, and LVGL. Keep board-specific low-level diagnostics in the `90_` range.
+Use the learning order in [examples/README.md](examples/README.md): simple serial examples first, then board services, peripherals, audio, display, and LVGL. Keep board-specific low-level diagnostics in the `90_` range.
 
 ## Documentation Style
 

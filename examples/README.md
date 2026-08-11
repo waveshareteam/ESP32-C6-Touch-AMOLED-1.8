@@ -1,5 +1,7 @@
 # Example index
 
+[简体中文](README_ZH.md)
+
 ## ESP-IDF
 
 Start with 00_board_check for serial output, then use 00_bsp_quickstart for

@@ -1,4 +1,6 @@
 # AXP2101-PMIC
+
+[简体中文](README_ZH.md)
 AXP2101 Power management IC（AXP2101电源管理芯片）
 
 ### 硬件开源链接：https://oshwhub.com/mondraker/axp2101_2023-11-18_20-15-19

@@ -1,5 +1,7 @@
 # Factory and recovery firmware
 
+[简体中文](README_ZH.md)
+
 ESP32-C6-Touch-AMOLED-1.8-FactoryOnly-251222.bin is a checked-in product
 factory/recovery image. It is not a source-built GitHub Actions artifact.
 

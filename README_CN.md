@@ -7,23 +7,21 @@
   </p>
   <p>
     <a href="README.md">English</a> ·
-    <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">商品页面</a> ·
-    <a href="https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8">产品文档</a> ·
-    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/releases">GitHub Releases</a> ·
-    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml">CI 固件产物</a> ·
-    <a href="examples/esp-idf/">ESP-IDF 示例</a> ·
-    <a href="examples/arduino/">Arduino V1</a> ·
-    <a href="examples/arduino-v2/">Arduino V2</a> ·
-    <a href="docs/">仓库文档</a>
+    <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">🌐 产品页面</a> ·
+    <a href="https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8">📚 产品文档</a> ·
+    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/releases">📦 GitHub Releases</a> ·
+    <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml">📦 CI 固件产物</a> ·
+    <a href="examples/esp-idf/">🧩 ESP-IDF 示例</a> ·
+    <a href="examples/arduino/">🔧 Arduino V1</a> ·
+    <a href="examples/arduino-v2/">🔧 Arduino V2</a> ·
+    <a href="docs/">📚 仓库文档</a>
   </p>
-  <a href="https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm">
-    <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 V2 商品图" width="520">
-  </a>
+  <img src="assets/ESP32-C6-Touch-AMOLED-1.8.jpg" alt="Waveshare ESP32-C6-Touch-AMOLED-1.8 产品主图" width="520">
 </div>
 
 ---
 
-## 概述
+## ✨ 概述
 
 本仓库提供适用于 Waveshare ESP32-C6-Touch-AMOLED-1.8 的第一方 ESP-IDF 工程、
 独立的 Arduino V1/V2 示例集、基于源码构建的固件包、工厂恢复镜像和开发文档。
@@ -31,7 +29,7 @@
 开发板集成 ESP32-C6、1.8 英寸 368 x 448 QSPI AMOLED 触摸屏、16 MB Flash、
 电源管理、RTC、IMU、音频和 microSD，不带 PSRAM。
 
-## 硬件版本
+## 🖥️ 硬件版本
 
 | 版本 | 显示控制器 | 触摸控制器 | Arduino 示例 |
 | --- | --- | --- | --- |
@@ -47,7 +45,7 @@ BSP 会探测触摸地址并自动选择对应的显示和触摸驱动，不需�
 > <code>Arduino_CST816x</code> 和 <code>esp_lcd_touch_cst816s</code>
 > 是兼容 CST820 的驱动名称，不代表板载芯片型号。
 
-## 硬件概览
+## 🖥️ 硬件概览
 
 | 功能 | 器件 / 接口 |
 | --- | --- |
@@ -64,7 +62,7 @@ BSP 会探测触摸地址并自动选择对应的显示和触摸驱动，不需�
 | 扩展存储 | SPI microSD |
 | 原理图 | [Schematic](Schematic/) |
 
-## 快速开始
+## 🚀 快速开始
 
 1. 先按上方表格确认开发板版本；版本不确定时，可运行
    [00_board_check](examples/esp-idf/00_board_check/) 由 BSP 输出检测结果。
@@ -77,9 +75,9 @@ BSP 会探测触摸地址并自动选择对应的显示和触摸驱动，不需�
    [Build Examples 运行](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml)
    下载对应的可刷写固件包。
 
-工具链和刷写说明见[入门指南](docs/GETTING_STARTED.md)。
+工具链和刷写说明见[入门指南](docs/GETTING_STARTED_ZH.md)。
 
-## ESP-IDF 示例
+## 🧪 ESP-IDF 示例
 
 | 示例 | 用途 |
 | --- | --- |
@@ -92,9 +90,9 @@ BSP 会探测触摸地址并自动选择对应的显示和触摸驱动，不需�
 | [05_LVGL_WITH_RAM](examples/esp-idf/05_LVGL_WITH_RAM/) | 使用内部 RAM 的 LVGL 音乐演示 |
 
 Arduino V1 有 14 个第一方示例，V2 有 9 个第一方示例。完整清单见
-[examples/README.md](examples/README.md)。各目录自带的 library examples 不进入产品 CI。
+[examples/README_ZH.md](examples/README_ZH.md)。各目录自带的 library examples 不进入产品 CI。
 
-## 支持的工具链
+## 🛠️ 支持的工具链
 
 | 开发框架 | 版本 | 固件构建数 |
 | --- | --- | ---: |
@@ -107,24 +105,21 @@ Arduino V1 有 14 个第一方示例，V2 有 9 个第一方示例。完整清�
 在完整 <code>all</code> 或 tag 矩阵中运行 2 个示例发现任务和 37 个固件构建任务。
 ESP-IDF 目标为 <code>esp32c6</code>；Arduino 使用
 <code>esp32:esp32:esp32c6:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB</code>。
-每个成功构建都会上传可刷写固件包。发现规则和产物说明见[持续集成](docs/CI.md)。
+每个成功构建都会上传可刷写固件包。发现规则和产物说明见[持续集成](docs/CI_ZH.md)。
 
-## BSP 依赖
+## 🧩 BSP 依赖
 
-BSP 正式发布到组件注册表之前，ESP-IDF 工程使用固定到 BSP 提交的 Git 路径依赖：
+ESP-IDF 工程从 ESP Component Registry 解析已发布的 BSP：
 
 ~~~yaml
 waveshare/esp32_c6_touch_amoled_1_8:
-  git: https://github.com/waveshareteam/Waveshare-ESP32-components.git
-  path: bsp/esp32_c6_touch_amoled_1_8
-  version: "d75c3e72be9e2248f525bcdbf9ca31f1fe8d357b"
+  version: "^1.0.0"
 ~~~
 
-BSP 源码 manifest 的版本为 1.0.0。完整 commit SHA 可确保注册表发布前的 CI
-依赖解析可复现；注册表版本发布后，可切换为兼容版本范围，例如
-<code>^1.0.0</code>。
+CI 覆盖 ESP-IDF v5.5.5 和 v6.0.2。注册表 1.x 范围用于非破坏性 BSP 更新；
+不表示它与归档文件或旧 Git 提交字节等价。
 
-## 固件产物
+## 📦 固件产物
 
 每个成功的 CI 构建都会打包为可刷写压缩包，并上传到
 [Build Examples 工作流](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/actions/workflows/examples.yml)。
@@ -150,9 +145,9 @@ flash.bat COMx
 每个固件包都包含 <code>manifest.json</code>、<code>flash_args.txt</code>、
 对应平台的刷写脚本和 <code>bin/</code> 下所需的二进制文件。
 [Firmware](Firmware/) 中的文件是独立的工厂/恢复镜像，不是 CI 构建产物。
-详见[固件产物](docs/FIRMWARE.md)。
+详见[固件产物](docs/FIRMWARE_ZH.md)。
 
-## 仓库结构
+## 🗂️ 仓库结构
 
 | 路径 | 用途 |
 | --- | --- |
@@ -166,30 +161,30 @@ flash.bat COMx
 | [docs/](docs/) | 入门、示例、CI、仓库结构和固件文档 |
 | [assets/](assets/) | 仓库文档使用的商品图片 |
 
-## 文档
+## 📚 文档
 
-- [入门指南](docs/GETTING_STARTED.md)
-- [示例清单](examples/README.md)
-- [持续集成](docs/CI.md)
-- [固件产物](docs/FIRMWARE.md)
-- [仓库结构](docs/PROJECT_STRUCTURE.md)
-- [Release 工具](releases/README.md)
+- [入门指南](docs/GETTING_STARTED_ZH.md)
+- [示例清单](examples/README_ZH.md)
+- [持续集成](docs/CI_ZH.md)
+- [固件产物](docs/FIRMWARE_ZH.md)
+- [仓库结构](docs/PROJECT_STRUCTURE_ZH.md)
+- [Release 工具](releases/README_ZH.md)
 - [商品页面](https://www.waveshare.com/esp32-c6-touch-amoled-1.8.htm)
 - [产品文档](https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-1.8)
 
-## 支持与贡献
+## 🤝 支持与贡献
 
 提交可复现的问题报告时，请提供开发板版本、示例路径、框架版本、复现步骤、
 预期行为、实际行为以及相关串口或构建日志。
 
-- [贡献指南](CONTRIBUTING.md)
-- [支持说明](SUPPORT.md)
-- [安全策略](SECURITY.md)
-- [行为准则](CODE_OF_CONDUCT.md)
-- [第三方声明](THIRD_PARTY.md)
+- [贡献指南](CONTRIBUTING_ZH.md)
+- [支持说明](SUPPORT_ZH.md)
+- [安全策略](SECURITY_ZH.md)
+- [行为准则](CODE_OF_CONDUCT_ZH.md)
+- [第三方声明](THIRD_PARTY_ZH.md)
 - [提交 Issue](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-1.8/issues/new/choose)
 
-## 许可证
+## 📄 许可证
 
 除子目录另有说明外，本仓库使用 Apache License 2.0。第三方代码保留其原有
-许可证和声明。详见 [LICENSE](LICENSE) 和[第三方声明](THIRD_PARTY.md)。
+许可证和声明。详见 [LICENSE](LICENSE) 和[第三方声明](THIRD_PARTY_ZH.md)。

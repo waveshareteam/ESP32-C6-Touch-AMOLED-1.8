@@ -1,5 +1,7 @@
 # Release tools
 
+[简体中文](README_ZH.md)
+
 ## Download CI artifacts
 
 Use download_artifacts.py with Python 3.10 or newer:
