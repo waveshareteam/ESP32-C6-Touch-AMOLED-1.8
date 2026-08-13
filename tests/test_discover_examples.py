@@ -132,6 +132,15 @@ class DiscoveryRoutingTests(unittest.TestCase):
         self.assertEqual(7, len(self.selected("esp-idf", "tools/new_input.dat")))
         self.assertEqual(23, len(self.selected("arduino", "tools/new_input.dat")))
 
+    def test_routing_input_is_conservative_and_visible_in_scope(self) -> None:
+        paths = ["tests/test_discover_examples.py"]
+        scope = discovery.route_scope(paths)
+        self.assertEqual(7, len(discovery.route_examples("esp-idf", paths, scope)))
+        self.assertEqual(paths, scope["unknown_paths"])
+        scope = discovery.route_scope(paths)
+        self.assertEqual(23, len(discovery.route_examples("arduino", paths, scope)))
+        self.assertEqual(paths, scope["unknown_paths"])
+
     def test_empty_or_unavailable_diff_fails_closed(self) -> None:
         with self.assertRaises(discovery.ScopeUnavailable):
             discovery.changed_paths(None, "HEAD", None)
