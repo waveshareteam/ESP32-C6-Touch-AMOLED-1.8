@@ -3,5 +3,7 @@ dependencies:
   idf: ">=5.5"
   waveshare/esp32_c6_touch_amoled_1_8:
     version: "^1.0.0"
+  # Brookesia demo (ESP-IDF v5.5 and v6): 2.7.2 is the currently validated dual-line version.
+  # Revisit after a newer port passes both IDF versions with bundled Brookesia.
   espressif/esp_lvgl_port:
     version: "2.7.2"
