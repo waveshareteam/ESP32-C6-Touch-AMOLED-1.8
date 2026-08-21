@@ -6,4 +6,4 @@ dependencies:
 
   brookesia_app_squareline_demo:
     version: "*"
-    override_path: "../../../../apps/brookesia_app_squareline_demo"
+    override_path: "../../../brookesia_app_squareline_demo"

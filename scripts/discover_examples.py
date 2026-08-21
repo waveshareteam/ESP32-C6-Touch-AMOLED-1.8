@@ -19,6 +19,9 @@ GLOBAL_PATTERNS = (
     "scripts/discover_examples.py",
     "releases/package_firmware.py",
 )
+ROUTING_INPUT_PATTERNS = (
+    "tests/test_discover_examples.py",
+)
 NON_BUILD_PATTERNS = (
     ".github/ISSUE_TEMPLATE/**",
     ".github/PULL_REQUEST_TEMPLATE*",
@@ -157,7 +160,16 @@ def route_examples(surface: str, paths: list[str], scope: dict[str, object] | No
         path = raw_path.replace("\\", "/").strip("/")
         if not path or is_firmware_path(path):
             continue
-        if is_documentation(path) or any(fnmatch.fnmatch(path, pattern) for pattern in NON_BUILD_PATTERNS):
+        if is_documentation(path):
+            continue
+        if any(fnmatch.fnmatch(path, pattern) for pattern in ROUTING_INPUT_PATTERNS):
+            unknown_change = True
+            if scope is not None:
+                cast_unknown = scope["unknown_paths"]
+                assert isinstance(cast_unknown, list)
+                cast_unknown.append(path)
+            continue
+        if any(fnmatch.fnmatch(path, pattern) for pattern in NON_BUILD_PATTERNS):
             continue
         if any(fnmatch.fnmatch(path, pattern) for pattern in GLOBAL_PATTERNS):
             global_change = True

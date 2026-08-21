@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,30 @@ class DiscoveryRoutingTests(unittest.TestCase):
             fqbn = "test"
         self.assertEqual(14, len(discovery.build_matrix(Args(), discovery.all_examples("esp-idf"))["include"]))
         self.assertEqual(37, 14 + len(discovery.all_examples("arduino")))
+
+    def test_relative_component_override_paths_exist(self) -> None:
+        """Every relative Component Manager override stays within this checkout."""
+        override_path = re.compile(r"^\s*override_path:\s*[\"']?([^\"'#\s]+)")
+        missing: list[str] = []
+        for example in discovery.list_esp_idf_examples():
+            project = ROOT / example["path"]
+            for manifest in project.rglob("idf_component.yml"):
+                for line_number, line in enumerate(manifest.read_text(encoding="utf-8").splitlines(), 1):
+                    match = override_path.match(line)
+                    if match:
+                        value = Path(match.group(1))
+                        target = (manifest.parent / value).resolve()
+                        if value.is_absolute() or not target.is_relative_to(ROOT) or not target.exists():
+                            missing.append(f"{manifest.relative_to(ROOT)}:{line_number}: {value}")
+        self.assertEqual([], missing, "invalid relative override_path targets:\n" + "\n".join(missing))
+
+    def test_test_app_component_paths_are_compatible_and_fail_fast(self) -> None:
+        cmake = (ROOT / "examples/esp-idf/03_esp-brookesia/components/brookesia_core/test_apps/CMakeLists.txt").read_text(encoding="utf-8")
+        self.assertIn('set(test_app_components "$ENV{IDF_PATH}/tools/test_apps/components")', cmake)
+        self.assertIn('set(legacy_test_app_components "$ENV{IDF_PATH}/tools/unit-test-app/components")', cmake)
+        self.assertIn('if(EXISTS "${test_app_components}")', cmake)
+        self.assertIn('elseif(EXISTS "${legacy_test_app_components}")', cmake)
+        self.assertIn('message(FATAL_ERROR', cmake)
 
     def test_root_markdown_selects_no_builds(self) -> None:
         self.assertFalse(self.selected("esp-idf", "README.md"))
@@ -106,6 +131,15 @@ class DiscoveryRoutingTests(unittest.TestCase):
     def test_unknown_complete_path_is_conservative(self) -> None:
         self.assertEqual(7, len(self.selected("esp-idf", "tools/new_input.dat")))
         self.assertEqual(23, len(self.selected("arduino", "tools/new_input.dat")))
+
+    def test_routing_input_is_conservative_and_visible_in_scope(self) -> None:
+        paths = ["tests/test_discover_examples.py"]
+        scope = discovery.route_scope(paths)
+        self.assertEqual(7, len(discovery.route_examples("esp-idf", paths, scope)))
+        self.assertEqual(paths, scope["unknown_paths"])
+        scope = discovery.route_scope(paths)
+        self.assertEqual(23, len(discovery.route_examples("arduino", paths, scope)))
+        self.assertEqual(paths, scope["unknown_paths"])
 
     def test_empty_or_unavailable_diff_fails_closed(self) -> None:
         with self.assertRaises(discovery.ScopeUnavailable):
